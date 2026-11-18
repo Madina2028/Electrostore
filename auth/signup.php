@@ -29,6 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Passwords do not match.";
     } elseif (strlen($password) < 8) {
         $error = "Password must be at least 8 characters long.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid email address.";
+    } elseif (!preg_match('/^[A-Za-z0-9_]{3,30}$/', $username)) {
+    $error = "Username must be 3-30 letters, numbers or underscores.";
+    } elseif ($phone_number !== '' && !preg_match('/^[0-9+\s-]{7,15}$/', $phone_number)) {
+        $error = "Please enter a valid phone number.";
     } else {
         // Check if username or email already exists
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");

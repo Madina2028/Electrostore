@@ -2,8 +2,8 @@ function validateSignup() {
     const password = document.getElementById('password').value;
     const confirm = document.getElementById('confirm').value;
 
-    if (password.length < 6) {
-        alert("Password must be at least 6 characters");
+    if (password.length < 8) {
+        alert("Password must be at least 8 characters");
         return false;
     }
     if (password !== confirm) {
