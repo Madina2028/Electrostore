@@ -201,7 +201,8 @@ if ($isLoggedIn) {
             } else {
                 try {
                     $conn->beginTransaction();
-                    $insert = $conn->prepare("INSERT INTO purchases (user_id, product_id, quantity, total_price, payment_method) VALUES (?, ?, ?, ?, ?)");
+                    $ship = trim($_POST['shipping_address'] ?? '');
+                    $insert = $conn->prepare("INSERT INTO purchases (user_id, product_id, quantity, total_price, payment_method, shipping_address) VALUES (?, ?, ?, ?, ?, ?)");
                     foreach ($product_details as $product) {
                         $line_total = $product['price'] * $product['qty'];
                         $insert->execute([$userId, $product['id'], $product['qty'], $line_total, $method]);
@@ -211,7 +212,8 @@ if ($isLoggedIn) {
                     echo "<div class='alert alert-success mt-3'>Payment via <strong>" . ucfirst($method) . "</strong> successful! Thank you, <strong>" . htmlspecialchars($userName) . "</strong>.</div>";
                 } catch (PDOException $e) {
                     $conn->rollBack();
-                    echo "<div class='alert alert-danger'>Transaction failed: " . htmlspecialchars($e->getMessage()) . "</div>";
+                    error_log($e->getMessage());
+                    echo "<div class='alert alert-danger'>Transaction failed. Please try again.</div>";
                 }
             }
         }
