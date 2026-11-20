@@ -80,6 +80,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
               <div class="collapse navbar-collapse justify-content-between" id="navbarCollapse">
                   <div class="navbar-nav mr-auto py-0">
                       <a href="index.php" class="nav-item nav-link">Home</a>
+                      <a href="shop.php" class="nav-item nav-link">Shop</a>
                       <a href="cartpg.php" class="nav-item nav-link">Shopping Cart</a>
                       <a href="contact.php" class="nav-item nav-link active">Contact</a>
                   </div>
@@ -196,6 +197,9 @@ $isLoggedIn = isset($_SESSION['user_id']);
               <div class="d-flex flex-column justify-content-start">
                 <a class="text-dark mb-2" href="index.php"
                   ><i class="fa fa-angle-right mr-2"></i>Home</a
+                >
+                <a class="text-dark mb-2" href="shop.php"
+                  ><i class="fa fa-angle-right mr-2"></i>Shop</a
                 >
                 <a class="text-dark mb-2" href="cartpg.php"
                   ><i class="fa fa-angle-right mr-2"></i>Shopping Cart</a
