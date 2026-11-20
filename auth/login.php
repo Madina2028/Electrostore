@@ -4,8 +4,9 @@ secureSessionStart();
 
 
 session_regenerate_id(true);
+$redirectTarget = authRedirectTarget();
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../index.php");
+    header('Location: ' . ($redirectTarget ?? '../index.php'));
     exit();
 }
 
@@ -44,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
-                header("Location: ../index.php");
+                header('Location: ' . ($redirectTarget ?? '../index.php'));
                 exit();
             }
         }
@@ -86,6 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form onsubmit="return validateLogin()" method="POST" action="login.php">
             <?= csrfField() ?>
+            <?php if ($redirectTarget !== null): ?>
+                <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirectTarget, ENT_QUOTES, 'UTF-8') ?>">
+            <?php endif; ?>
             <label for="identifier" class="visually-hidden">Email or Username</label>
             <input type="text" id="identifier" name="identifier" placeholder="Email or Username" required>
 
@@ -95,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit">Login</button>
         </form>
 
-        <p>Don't have an account? <a href="signup.php">Sign up here</a></p>
+        <p>Don't have an account? <a href="signup.php<?= $redirectTarget !== null ? '?redirect=' . rawurlencode($redirectTarget) : '' ?>">Sign up here</a></p>
     </div>
 
     <script src="../assets/js/validation.js"></script>

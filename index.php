@@ -95,8 +95,6 @@ if (isset($_GET['login_required'])) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
 
     <!-- Libraries Stylesheet -->
-    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
-
     <!-- Customized Bootstrap Stylesheet -->
     <link href="css/style.css" rel="stylesheet">
 </head>
@@ -165,11 +163,11 @@ if (isset($_GET['login_required'])) {
                         </div>
                         <div class="navbar-nav ml-auto py-0">
                             <?php if ($isLoggedIn): ?>
-                                <a href="profile.php" class="nav-item nav-link">Profile</a>
+                                <a href="profile.php" class="nav-item nav-link"><?= htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, 'UTF-8') ?></a>
                                 <a href="auth/logout.php" class="nav-item nav-link">Logout</a>
                             <?php else: ?>
-                                <a href="auth/login.php" class="nav-item nav-link">Login</a>
-                                <a href="auth/signup.php" class="nav-item nav-link">Register</a>
+                                <a href="auth/login.php<?= authRedirectQuery() ?>" class="nav-item nav-link">Login</a>
+                                <a href="auth/signup.php<?= authRedirectQuery() ?>" class="nav-item nav-link">Register</a>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -344,12 +342,7 @@ if (isset($_GET['login_required'])) {
     <!-- JavaScript Libraries -->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
-    <script src="lib/easing/easing.min.js"></script>
-    <script src="lib/owlcarousel/owl.carousel.min.js"></script>
-
-    <!-- Contact Javascript File -->
-    <script src="mail/jqBootstrapValidation.min.js"></script>
-    <script src="mail/contact.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>

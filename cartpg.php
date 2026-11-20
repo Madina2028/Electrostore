@@ -69,7 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css"
     rel="stylesheet"
   />
-  <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet" />
    <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -113,11 +112,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   </div>
                   <div class="navbar-nav ml-auto py-0">
                       <?php if ($isLoggedIn): ?>
-                        <a href="profile.php" class="nav-item nav-link">Profile</a>
+                        <a href="profile.php" class="nav-item nav-link"><?= htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, 'UTF-8') ?></a>
                         <a href="auth/logout.php" class="nav-item nav-link">Logout</a>
                       <?php else: ?>
-                          <a href="auth/login.php" class="nav-item nav-link">Login</a>
-                          <a href="auth/signup.php" class="nav-item nav-link">Register</a>
+                          <a href="auth/login.php<?= authRedirectQuery() ?>" class="nav-item nav-link">Login</a>
+                          <a href="auth/signup.php<?= authRedirectQuery() ?>" class="nav-item nav-link">Register</a>
                       <?php endif; ?>
                   </div>
               </div>

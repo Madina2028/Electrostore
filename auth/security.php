@@ -23,7 +23,71 @@ function secureSessionStart(): void
     header('X-Frame-Options: DENY');
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header("Permissions-Policy: geolocation=(), microphone=(), camera=()");
-    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://stackpath.bootstrapcdn.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://stackpath.bootstrapcdn.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+    header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdn.jsdelivr.net https://stackpath.bootstrapcdn.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://stackpath.bootstrapcdn.com https://cdnjs.cloudflare.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' https://stackpath.bootstrapcdn.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+}
+
+function authRedirectTarget(): ?string
+{
+    $candidate = $_POST['redirect'] ?? $_GET['redirect'] ?? null;
+    if (!is_string($candidate) || $candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate)) {
+        return null;
+    }
+
+    $parts = parse_url($candidate);
+    if (
+        $parts === false
+        || isset($parts['scheme'])
+        || isset($parts['host'])
+        || !isset($parts['path'])
+        || $parts['path'] === ''
+        || $parts['path'][0] !== '/'
+        || substr($parts['path'], 0, 2) === '//'
+        || strpos($parts['path'], '\\') !== false
+        || preg_match('/%(?:2f|5c)/i', $parts['path'])
+    ) {
+        return null;
+    }
+
+    $scriptPath = parse_url($_SERVER['SCRIPT_NAME'] ?? '', PHP_URL_PATH);
+    $basePath = dirname(is_string($scriptPath) ? $scriptPath : '');
+    if (basename($basePath) === 'auth') {
+        $basePath = dirname($basePath);
+    }
+    $basePath = rtrim(str_replace('\\', '/', $basePath), '/');
+    $path = rawurldecode($parts['path']);
+    $segments = explode('/', $path);
+
+    if (
+        preg_match('/[\x00-\x1F\x7F]/', $path)
+        || strpos($path, '\\') !== false
+        || substr($path, 0, 2) === '//'
+        || in_array('.', $segments, true)
+        || in_array('..', $segments, true)
+        || ($basePath !== '' && $path !== $basePath && strpos($path, $basePath . '/') !== 0)
+        || strpos($path, $basePath . '/auth/login.php') === 0
+        || strpos($path, $basePath . '/auth/signup.php') === 0
+    ) {
+        return null;
+    }
+
+    return $candidate;
+}
+
+function authLoginUrlForCurrentRequest(): string
+{
+    $scriptPath = parse_url($_SERVER['SCRIPT_NAME'] ?? '', PHP_URL_PATH);
+    $basePath = dirname(is_string($scriptPath) ? $scriptPath : '');
+    if (basename($basePath) === 'auth') {
+        $basePath = dirname($basePath);
+    }
+
+    $basePath = rtrim(str_replace('\\', '/', $basePath), '/');
+    return $basePath . '/auth/login.php?redirect=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/');
+}
+
+function authRedirectQuery(): string
+{
+    return '?redirect=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/');
 }
 
 function csrfToken(): string
@@ -62,23 +126,8 @@ function clientIp(): string
     return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : 'unknown';
 }
 
-function ensureLoginAttemptsTable(PDO $pdo): void
-{
-    $pdo->exec(
-        "CREATE TABLE IF NOT EXISTS login_attempts (
-            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            identifier_hash CHAR(64) NOT NULL,
-            ip_hash CHAR(64) NOT NULL,
-            attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_identifier_time (identifier_hash, attempted_at),
-            INDEX idx_ip_time (ip_hash, attempted_at)
-        ) ENGINE=InnoDB"
-    );
-}
-
 function loginIsLocked(PDO $pdo, string $identifier): bool
 {
-    ensureLoginAttemptsTable($pdo);
     $identifierHash = hash('sha256', strtolower(trim($identifier)));
     $ipHash = hash('sha256', clientIp());
 
@@ -94,7 +143,6 @@ function loginIsLocked(PDO $pdo, string $identifier): bool
 
 function recordLoginFailure(PDO $pdo, string $identifier): void
 {
-    ensureLoginAttemptsTable($pdo);
     $identifierHash = hash('sha256', strtolower(trim($identifier)));
     $ipHash = hash('sha256', clientIp());
 
@@ -107,7 +155,6 @@ function recordLoginFailure(PDO $pdo, string $identifier): void
 
 function clearLoginFailures(PDO $pdo, string $identifier): void
 {
-    ensureLoginAttemptsTable($pdo);
     $identifierHash = hash('sha256', strtolower(trim($identifier)));
     $stmt = $pdo->prepare("DELETE FROM login_attempts WHERE identifier_hash = ?");
     $stmt->execute([$identifierHash]);

@@ -1,9 +1,10 @@
 <?php
 require_once __DIR__ . '/security.php';
 secureSessionStart();
+$redirectTarget = authRedirectTarget();
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../index.php");
+    header('Location: ' . ($redirectTarget ?? '../index.php'));
     exit();
 }
 
@@ -50,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, full_name, phone_number, address) VALUES (?, ?, ?, ?, ?, ?)");
             $success = $stmt->execute([$username, $email, $password_hash, $full_name, $phone_number, $address]);
             if ($success) {
-                header("Location: login.php?signup=success");
+                $redirectQuery = $redirectTarget !== null ? '&redirect=' . rawurlencode($redirectTarget) : '';
+                header("Location: login.php?signup=success" . $redirectQuery);
                 exit;
             } else {
                 $error = "Registration failed. Please try again.";
@@ -86,6 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form onsubmit="return validateSignup()" method="POST" action="">
             <?= csrfField() ?>
+            <?php if ($redirectTarget !== null): ?>
+                <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($redirectTarget, ENT_QUOTES, 'UTF-8'); ?>" />
+            <?php endif; ?>
             <input type="text" id="full_name" name="full_name" placeholder="Full Name *" required
                 value="<?php echo isset($full_name) ? htmlspecialchars($full_name) : ''; ?>" />
 
@@ -108,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit">Sign Up</button>
         </form>
 
-        <p>Already have an account? <a href="login.php">Login here</a></p>
+        <p>Already have an account? <a href="login.php<?= $redirectTarget !== null ? '?redirect=' . rawurlencode($redirectTarget) : '' ?>">Login here</a></p>
     </div>
 
     <!-- JS for validation -->

@@ -47,7 +47,6 @@ if ($isLoggedIn) {
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet" />
 
     <!-- Libraries & Styles -->
-    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet" />
     <link href="css/style.css" rel="stylesheet" />
 </head>
 <body>
@@ -90,11 +89,11 @@ if ($isLoggedIn) {
                     </div>
                     <div class="navbar-nav ml-auto py-0">
                         <?php if ($isLoggedIn): ?>
-                            <a href="profile.php" class="nav-item nav-link">Profile</a>
+                            <a href="profile.php" class="nav-item nav-link"><?= htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, 'UTF-8') ?></a>
                             <a href="auth/logout.php" class="nav-item nav-link">Logout</a>
                         <?php else: ?>
-                            <a href="auth/login.php" class="nav-item nav-link">Login</a>
-                            <a href="auth/signup.php" class="nav-item nav-link">Register</a>
+                            <a href="auth/login.php<?= authRedirectQuery() ?>" class="nav-item nav-link">Login</a>
+                            <a href="auth/signup.php<?= authRedirectQuery() ?>" class="nav-item nav-link">Register</a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -126,7 +125,7 @@ if ($isLoggedIn) {
         <h5 class="mt-3">Total: <strong>$<?= number_format($total, 2); ?></strong></h5>
 
         <?php if (!$isLoggedIn): ?>
-            <p class="text-danger mt-3">You must be <a href="auth/login.php">logged in</a> to complete your purchase.</p>
+            <p class="text-danger mt-3">You must be <a href="auth/login.php<?= authRedirectQuery() ?>">logged in</a> to complete your purchase.</p>
         <?php elseif (empty($cart)): ?>
             <p class="text-warning mt-3">Your cart is empty. <a href="index.php">Continue shopping</a>.</p>
         <?php else: ?>
@@ -277,8 +276,7 @@ if ($isLoggedIn) {
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
-<script src="lib/easing/easing.min.js"></script>
-<script src="lib/owlcarousel/owl.carousel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
 <script src="js/main.js"></script>
 
 <!-- Payment Field Toggle -->

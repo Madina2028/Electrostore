@@ -1,6 +1,7 @@
 -- Drop tables if exist (in dependency order)
 DROP TABLE IF EXISTS purchases;
 DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS login_attempts;
 DROP TABLE IF EXISTS users;
 
 -- Users table
@@ -14,6 +15,16 @@ CREATE TABLE users (
     address TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Login throttling
+CREATE TABLE login_attempts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    identifier_hash CHAR(64) NOT NULL,
+    ip_hash CHAR(64) NOT NULL,
+    attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_identifier_time (identifier_hash, attempted_at),
+    INDEX idx_ip_time (ip_hash, attempted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Products table

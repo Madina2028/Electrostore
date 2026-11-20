@@ -93,7 +93,6 @@ $purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css"
     rel="stylesheet"
   />
-  <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet" />
    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -135,7 +134,7 @@ $purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <a href="contact.php" class="nav-item nav-link">Contact</a>
                     </div>
                     <div class="navbar-nav ml-auto py-0">
-                        <a href="#" class="nav-item nav-link active">Profile</a>
+                        <a href="#" class="nav-item nav-link active"><?= htmlspecialchars($username, ENT_QUOTES, 'UTF-8') ?></a>
                         <a href="auth/logout.php" class="nav-item nav-link">Logout</a>
                     </div>
                 </div>
@@ -305,8 +304,7 @@ $purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
-<script src="lib/easing/easing.min.js"></script>
-<script src="lib/owlcarousel/owl.carousel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js"></script>
 <script src="js/main.js"></script>
 
 <script>

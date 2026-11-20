@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     rejectInvalidCsrf();
     if (!isset($_SESSION['user_id'])) {
         // Not logged in - redirect to login page with message
-        header('Location: auth/login.php?message=login_required');
+        header('Location: ' . authLoginUrlForCurrentRequest());
         exit();
     }
 
@@ -84,7 +84,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     />
 
     <!-- Libraries Stylesheet -->
-    <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet" />
 
     <!-- Customized Bootstrap Stylesheet -->
     <link href="css/style.css" rel="stylesheet" />
@@ -132,11 +131,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
                   </div>
                   <div class="navbar-nav ml-auto py-0">
                       <?php if ($isLoggedIn): ?>
-                          <a href="profile.php" class="nav-item nav-link">Profile</a>
+                          <a href="profile.php" class="nav-item nav-link"><?= htmlspecialchars($_SESSION['username'] ?? 'User', ENT_QUOTES, 'UTF-8') ?></a>
                           <a href="auth/logout.php" class="nav-item nav-link">Logout</a>
                       <?php else: ?>
-                          <a href="auth/login.php" class="nav-item nav-link">Login</a>
-                          <a href="auth/signup.php" class="nav-item nav-link">Register</a>
+                          <a href="auth/login.php<?= authRedirectQuery() ?>" class="nav-item nav-link">Login</a>
+                          <a href="auth/signup.php<?= authRedirectQuery() ?>" class="nav-item nav-link">Register</a>
                       <?php endif; ?>
                   </div>
               </div>
@@ -192,7 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         <button type="submit" name="add_to_cart" class="btn btn-primary">Add to Cart</button>
     </form>
 <?php else: ?>
-    <a href="auth/login.php?message=login_required" class="btn btn-primary">Login to Add to Cart</a>
+    <a href="auth/login.php?message=login_required&amp;redirect=<?= rawurlencode($_SERVER['REQUEST_URI'] ?? '/') ?>" class="btn btn-primary">Login to Add to Cart</a>
 <?php endif; ?>
 
       </div>
