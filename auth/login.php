@@ -1,8 +1,9 @@
 <?php
-session_start();
+require_once __DIR__ . '/security.php';
+secureSessionStart();
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: /Electrostore/index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -11,14 +12,19 @@ require_once '../database_conn.php';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    rejectInvalidCsrf();
     $identifier = trim($_POST['identifier']);
-    $password = trim($_POST['password']);
+    $password = $_POST['password'];
 
     if (empty($identifier) || empty($password)) {
         $error = "Please fill in all fields.";
     } else {
         $database = new Database();
         $db = $database->connect();
+
+        if (loginIsLocked($db, $identifier)) {
+            $error = "Too many login attempts. Please try again in 15 minutes.";
+        } else {
 
         $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
         $query = $isEmail
@@ -32,14 +38,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->rowCount() === 1) {
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
             if (password_verify($password, $user['password_hash'])) {
+                clearLoginFailures($db, $identifier);
+                session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
-                header("Location: /Electrostore/index.php");
+                header("Location: ../index.php");
                 exit();
             }
         }
+        recordLoginFailure($db, $identifier);
 
         $error = "Invalid username/email or password.";
+        }
     }
 }
 ?>
@@ -63,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-container">
         <!-- Updated form heading with link -->
         <div class="form-heading">
-            <a href="/Electrostore/index.php" style="text-decoration: none; color: #333;">Login to <strong style="color: #007bff;">ElectroStore</strong></a>
+            <a href="../index.php" style="text-decoration: none; color: #333;">Login to <strong style="color: #007bff;">ElectroStore</strong></a>
         </div>
 
         <?php if (!empty($error)): ?>
@@ -73,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form onsubmit="return validateLogin()" method="POST" action="login.php">
+            <?= csrfField() ?>
             <label for="identifier" class="visually-hidden">Email or Username</label>
             <input type="text" id="identifier" name="identifier" placeholder="Email or Username" required>
 

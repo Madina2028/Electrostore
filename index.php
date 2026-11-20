@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/auth/security.php';
+secureSessionStart();
 
 $isLoggedIn = isset($_SESSION['user_id']);
 
@@ -24,6 +25,7 @@ if (isset($_GET['goodbye'])) {
 
 // Handle add to cart
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'], $_POST['product_id'])) {
+    rejectInvalidCsrf();
     if (!isset($_SESSION['user_id'])) {
         // Redirect back with login required message
         header('Location: index.php?login_required=1');
@@ -50,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'], $_POST
         $found = false;
         foreach ($_SESSION['cart'] as &$cart_item) {
             if ($cart_item['id'] === $item['id']) {
-                $cart_item['quantity'] += 1;
+                $cart_item['quantity'] = min(100, $cart_item['quantity'] + 1);
                 $found = true;
                 break;
             }
@@ -267,6 +269,7 @@ if (isset($_GET['login_required'])) {
                             </a>
 
                             <form method="post" style="margin: 0; padding: 0;">
+                                <?= csrfField() ?>
                                 <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
                                 <button
                                     type="submit"

@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/auth/security.php';
+secureSessionStart();
 require_once 'database_conn.php';
 include_once 'auth/auth_check.php';
 
@@ -10,6 +12,7 @@ $username = $_SESSION['username'] ?? 'User';
 
 // ✅ Handle account deletion first
 if (isset($_POST['delete_account']) && isset($_POST['delete_password'])) {
+    rejectInvalidCsrf();
     $password = $_POST['delete_password'] ?? '';
 
     $stmt = $conn->prepare("SELECT password_hash FROM users WHERE id = ?");
@@ -35,9 +38,15 @@ if (isset($_POST['delete_account']) && isset($_POST['delete_password'])) {
 
 // ✅ Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['delete_account'])) {
+    rejectInvalidCsrf();
     $full_name = trim($_POST['full_name']);
     $phone = trim($_POST['phone_number']);
     $address = trim($_POST['address']);
+
+    if (strlen($full_name) > 100 || strlen($phone) > 20 || strlen($address) > 2000) {
+        http_response_code(400);
+        exit('One or more profile fields are too long.');
+    }
 
     $updateStmt = $conn->prepare("UPDATE users SET full_name = ?, phone_number = ?, address = ? WHERE id = ?");
     $updateStmt->execute([$full_name, $phone, $address, $userId]);
@@ -147,6 +156,7 @@ $purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <?php endif; ?>
 
 <form method="POST" action="profile.php" class="row g-3 mb-4">
+    <?= csrfField() ?>
     <div class="col-md-6">
         <label for="full_name" class="form-label">Full Name</label>
         <input type="text" class="form-control" id="full_name" name="full_name"
@@ -228,6 +238,7 @@ $purchases = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <p class="mb-3">This action is irreversible. Click the button below to confirm.</p>
 
         <form id="deleteForm">
+            <?= csrfField() ?>
             <div class="mb-3">
                 <label for="delete_password" class="form-label">Confirm Password</label>
                 <input type="password" class="form-control" id="delete_password" name="delete_password" required>
@@ -333,6 +344,7 @@ document.getElementById('deleteForm').addEventListener('submit', async function 
     e.preventDefault();
 
     const password = document.getElementById('delete_password').value;
+    const csrfToken = document.querySelector('#deleteForm input[name="csrf_token"]').value;
 
     const response = await fetch('profile.php', {
         method: 'POST',
@@ -341,7 +353,8 @@ document.getElementById('deleteForm').addEventListener('submit', async function 
         },
         body: new URLSearchParams({
             delete_account: 1,
-            delete_password: password
+            delete_password: password,
+            csrf_token: csrfToken
         })
     });
 

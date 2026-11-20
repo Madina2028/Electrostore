@@ -1,11 +1,14 @@
 <?php
-session_start();
+require_once __DIR__ . '/auth/security.php';
+secureSessionStart();
 require_once 'database_conn.php';
 
 $isLoggedIn = isset($_SESSION['user_id']);
+$success_message = '';
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    die("Product not found.");
+    http_response_code(404);
+    exit('Product not found.');
 }
 
 $id = (int) $_GET['id'];
@@ -17,9 +20,11 @@ $stmt->execute([$id]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$product) {
-    die("Product not found.");
+    http_response_code(404);
+    exit('Product not found.');
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
+    rejectInvalidCsrf();
     if (!isset($_SESSION['user_id'])) {
         // Not logged in - redirect to login page with message
         header('Location: auth/login.php?message=login_required');
@@ -42,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     $found = false;
     foreach ($_SESSION['cart'] as &$cart_item) {
         if ($cart_item['id'] === $item['id']) {
-            $cart_item['quantity'] += 1;
+            $cart_item['quantity'] = min(100, $cart_item['quantity'] + 1);
             $found = true;
             break;
         }
@@ -89,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     <div class="container-fluid">
       <div class="row align-items-center py-3 px-xl-5">
         <div class="col-lg-3 d-none d-lg-block">
-          <a href="" class="text-decoration-none">
+          <a href="index.php" class="text-decoration-none">
             <h1 class="m-0 display-6 font-weight-semi-bold">
               <span class="text-primary font-weight-bold border px-3 mr-1"
                 >E</span
@@ -113,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         <div class="row align-items-center justify-content-center">
           <div class="col-lg-11">
             <nav class="navbar navbar-expand-lg bg-light navbar-light py-3 py-lg-0 px-0">
-              <a href="" class="text-decoration-none d-block d-lg-none">
+              <a href="index.php" class="text-decoration-none d-block d-lg-none">
                   <h1 class="m-0 display-5 font-weight-semi-bold"><span class="text-primary font-weight-bold border px-3 mr-1">E</span>lectrostore</h1>
               </a>
               <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbarCollapse">
@@ -183,6 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
         <!-- Add to Cart Button -->
         <?php if (isset($_SESSION['user_id'])): ?>
     <form method="post" class="d-inline">
+        <?= csrfField() ?>
         <button type="submit" name="add_to_cart" class="btn btn-primary">Add to Cart</button>
     </form>
 <?php else: ?>
@@ -199,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     <div class="container-fluid bg-secondary text-dark mt-5 pt-5">
         <div class="row px-xl-5 pt-5">
             <div class="col-lg-4 col-md-12 mb-5 pr-3 pr-xl-5">
-                <a href="" class="text-decoration-none">
+                <a href="index.php" class="text-decoration-none">
                     <h1 class="mb-4 display-5 font-weight-semi-bold"><span class="text-primary font-weight-bold border border-white px-3 mr-1">E</span>lectrostore</h1>
                 </a>
                 <p class="mb-2"><i class="fa fa-map-marker-alt text-primary mr-3"></i>123 ElectroStore</p>

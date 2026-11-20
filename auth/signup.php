@@ -1,8 +1,9 @@
 <?php
-session_start();
+require_once __DIR__ . '/security.php';
+secureSessionStart();
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: /Electrostore/index.php");
+    header("Location: ../index.php");
     exit();
 }
 
@@ -14,6 +15,7 @@ $pdo = $db->connect();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    rejectInvalidCsrf();
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
     $full_name = trim($_POST['full_name']);
@@ -29,6 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Passwords do not match.";
     } elseif (strlen($password) < 8) {
         $error = "Password must be at least 8 characters long.";
+    } elseif (!preg_match('/^[A-Za-z0-9._-]{3,50}$/', $username)) {
+        $error = "Username must be 3-50 characters using letters, numbers, dots, underscores, or hyphens.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 100) {
+        $error = "Please enter a valid email address.";
+    } elseif ($phone_number !== '' && !preg_match('/^[0-9+\s-]{7,15}$/', $phone_number)) {
+        $error = "Please enter a valid phone number.";
+    } elseif (strlen($full_name) > 100 || strlen($phone_number) > 20 || strlen($address) > 2000) {
+        $error = "One or more fields are too long.";
     } else {
         // Check if username or email already exists
         $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
@@ -75,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form onsubmit="return validateSignup()" method="POST" action="">
+            <?= csrfField() ?>
             <input type="text" id="full_name" name="full_name" placeholder="Full Name *" required
                 value="<?php echo isset($full_name) ? htmlspecialchars($full_name) : ''; ?>" />
 

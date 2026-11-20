@@ -1,0 +1,2 @@
+# Local database credentials; keep the example template tracked.
+/config/db.local.php

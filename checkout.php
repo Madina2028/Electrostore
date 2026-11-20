@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/auth/security.php';
+secureSessionStart();
 require_once 'database_conn.php';
 include_once 'auth/auth_check.php';  // Ensures user is logged in
 
@@ -124,11 +126,12 @@ if ($isLoggedIn) {
         <h5 class="mt-3">Total: <strong>$<?= number_format($total, 2); ?></strong></h5>
 
         <?php if (!$isLoggedIn): ?>
-            <p class="text-danger mt-3">You must be <a href="login.php">logged in</a> to complete your purchase.</p>
+            <p class="text-danger mt-3">You must be <a href="auth/login.php">logged in</a> to complete your purchase.</p>
         <?php elseif (empty($cart)): ?>
             <p class="text-warning mt-3">Your cart is empty. <a href="index.php">Continue shopping</a>.</p>
         <?php else: ?>
             <form method="POST" class="mt-4" id="paymentForm">
+                <?= csrfField() ?>
                 <div class="form-group">
                     <label for="shipping_address">Shipping Address:</label>
                     <input type="text" name="shipping_address" id="shipping_address" class="form-control" value="<?= htmlspecialchars($shippingAddress) ?>" required>
@@ -142,11 +145,6 @@ if ($isLoggedIn) {
                         <option value="mpesa">M-PESA</option>
                         <option value="paypal">PayPal</option>
                     </select>
-                </div>
-
-                <div id="card_fields" class="form-group d-none">
-                    <label>Card Number</label>
-                    <input type="text" name="card_number" class="form-control">
                 </div>
 
                 <div id="mpesa_fields" class="form-group d-none">
@@ -165,17 +163,19 @@ if ($isLoggedIn) {
 
         <?php
         if (isset($_POST['checkout']) && $isLoggedIn && !empty($cart)) {
+            rejectInvalidCsrf();
             $method = $_POST['payment_method'] ?? '';
             $valid = true;
             $error = '';
+            $shippingAddress = trim($_POST['shipping_address'] ?? '');
+            if ($shippingAddress === '' || strlen($shippingAddress) > 2000) {
+                $valid = false;
+                $error = "Please enter a valid shipping address.";
+            }
 
             switch ($method) {
                 case 'card':
-                    $card = trim($_POST['card_number'] ?? '');
-                    if (empty($card) || strlen($card) < 8) {
-                        $valid = false;
-                        $error = "Please enter a valid card number.";
-                    }
+                    // Card details are not collected or stored by this demo.
                     break;
                 case 'mpesa':
                     $mpesa = trim($_POST['mpesa_number'] ?? '');
@@ -197,21 +197,22 @@ if ($isLoggedIn) {
             }
 
             if (!$valid) {
-                echo "<div class='alert alert-danger mt-3'>$error</div>";
+                echo "<div class='alert alert-danger mt-3'>" . htmlspecialchars($error, ENT_QUOTES, 'UTF-8') . "</div>";
             } else {
                 try {
                     $conn->beginTransaction();
-                    $insert = $conn->prepare("INSERT INTO purchases (user_id, product_id, quantity, total_price, payment_method) VALUES (?, ?, ?, ?, ?)");
+                    $insert = $conn->prepare("INSERT INTO purchases (user_id, product_id, quantity, total_price, payment_method, shipping_address) VALUES (?, ?, ?, ?, ?, ?)");
                     foreach ($product_details as $product) {
                         $line_total = $product['price'] * $product['qty'];
-                        $insert->execute([$userId, $product['id'], $product['qty'], $line_total, $method]);
+                        $insert->execute([$userId, $product['id'], $product['qty'], $line_total, $method, $shippingAddress]);
                     }
                     $conn->commit();
                     unset($_SESSION['cart']);
                     echo "<div class='alert alert-success mt-3'>Payment via <strong>" . ucfirst($method) . "</strong> successful! Thank you, <strong>" . htmlspecialchars($userName) . "</strong>.</div>";
                 } catch (PDOException $e) {
                     $conn->rollBack();
-                    echo "<div class='alert alert-danger'>Transaction failed: " . htmlspecialchars($e->getMessage()) . "</div>";
+                    error_log("Checkout transaction failed: " . $e->getMessage());
+                    echo "<div class='alert alert-danger'>Transaction failed. Please try again.</div>";
                 }
             }
         }
@@ -224,7 +225,7 @@ if ($isLoggedIn) {
 <div class="container-fluid bg-secondary text-dark mt-5 pt-5">
   <div class="row px-xl-5 pt-5">
     <div class="col-lg-4 col-md-12 mb-5 pr-3 pr-xl-5">
-      <a href="" class="text-decoration-none">
+      <a href="index.php" class="text-decoration-none">
         <h1 class="mb-4 display-5 font-weight-semi-bold">
           <span class="text-primary font-weight-bold border border-white px-3 mr-1">E</span>lectrostore
         </h1>
@@ -283,17 +284,14 @@ if ($isLoggedIn) {
 <!-- Payment Field Toggle -->
 <script>
     const paymentSelect = document.getElementById('payment_method');
-    const cardFields = document.getElementById('card_fields');
     const mpesaFields = document.getElementById('mpesa_fields');
     const paypalFields = document.getElementById('paypal_fields');
 
     paymentSelect.addEventListener('change', function () {
-        cardFields.classList.add('d-none');
         mpesaFields.classList.add('d-none');
         paypalFields.classList.add('d-none');
 
-        if (this.value === 'card') cardFields.classList.remove('d-none');
-        else if (this.value === 'mpesa') mpesaFields.classList.remove('d-none');
+        if (this.value === 'mpesa') mpesaFields.classList.remove('d-none');
         else if (this.value === 'paypal') paypalFields.classList.remove('d-none');
     });
 </script>

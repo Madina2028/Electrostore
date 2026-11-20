@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/security.php';
+secureSessionStart();
 
 // Unset all session variables
 $_SESSION = array();

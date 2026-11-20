@@ -10,11 +10,18 @@ $isLoggedIn = isset($_SESSION['user_id']);
 
 // Handle POST actions: update quantity or remove item
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    rejectInvalidCsrf();
     if (isset($_POST['change'], $_POST['index'])) {
         $index = (int)$_POST['index'];
         $change = (int)$_POST['change'];
+        if (!in_array($change, [-1, 1], true)) {
+            $change = 0;
+        }
         if (isset($_SESSION['cart'][$index])) {
             $_SESSION['cart'][$index]['quantity'] += $change;
+            if ($_SESSION['cart'][$index]['quantity'] > 100) {
+                $_SESSION['cart'][$index]['quantity'] = 100;
+            }
             if ($_SESSION['cart'][$index]['quantity'] < 1) {
                 array_splice($_SESSION['cart'], $index, 1);
             }
@@ -24,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $index = (int)$_POST['index'];
         $newQty = (int)$_POST['quantity'];
         if (isset($_SESSION['cart'][$index])) {
-            if ($newQty > 0) {
+            if ($newQty > 0 && $newQty <= 100) {
                 $_SESSION['cart'][$index]['quantity'] = $newQty;
             } else {
                 // Remove item if quantity < 1
@@ -155,11 +162,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <td>$<?= number_format($item['price'], 2) ?></td>
             <td>
               <form method="post" action="cartpg.php" class="d-inline" id="qty-form-<?= $index ?>">
+                <?= csrfField() ?>
                 <input type="hidden" name="index" value="<?= $index ?>" />
                 <input type="hidden" name="quantity" id="qty-input-<?= $index ?>" value="<?= (int)$item['quantity'] ?>" />
               </form>
 
               <form method="post" action="cartpg.php" class="d-inline">
+                <?= csrfField() ?>
                 <input type="hidden" name="index" value="<?= $index ?>" />
                 <button name="change" value="-1" class="btn btn-sm btn-outline-info">-</button>
               </form>
@@ -174,6 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               </span>
 
               <form method="post" action="cartpg.php" class="d-inline">
+                <?= csrfField() ?>
                 <input type="hidden" name="index" value="<?= $index ?>" />
                 <button name="change" value="1" class="btn btn-sm btn-outline-info">+</button>
               </form>
@@ -182,6 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <td>$<?= number_format($itemTotal, 2) ?></td>
             <td>
               <form method="post" action="cartpg.php">
+                <?= csrfField() ?>
                 <input type="hidden" name="index" value="<?= $index ?>" />
                 <button name="remove" value="1" class="btn btn-sm btn-danger">Remove</button>
               </form>
